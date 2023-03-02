@@ -1,9 +1,16 @@
 import * as functions from "firebase-functions";
 
-// // Start writing functions
-// // https://firebase.google.com/docs/functions/typescript
-//
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+import admin = require("firebase-admin");
+admin.initializeApp();
+
+const cors = require("cors")({ origin: true });
+
+export const saveTrip = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    console.log("req.body " + JSON.stringify(req.body));
+    await admin.firestore().collection("trips").add(req.body);
+    res.json({
+      result: "saved trip",
+    });
+  });
+});
