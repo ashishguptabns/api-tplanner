@@ -9,10 +9,17 @@ const cors = require("cors")({ origin: true });
 
 export const saveTrip = functions.https.onRequest(async (req, res) => {
   cors(req, res, async () => {
-    await firestoreDb.collection("trips").add(req.body);
-    res.json({
-      result: "saved trip",
-    });
+    let tripToSave = req.body;
+    if (hasAllTripFields(tripToSave)) {
+      await firestoreDb.collection("trips").add(tripToSave);
+      res.json({
+        result: "saved trip",
+      });
+    } else {
+      res.json({
+        result: "invalid trip",
+      });
+    }
   });
 });
 
@@ -36,3 +43,17 @@ export const fetchTrips = functions.https.onRequest(async (req, res) => {
     res.json(trips);
   });
 });
+
+function hasAllTripFields(trip: TripDetail) {
+  return (
+    !isEmpty(trip.cityFrom) &&
+    !isEmpty(trip.cityTo) &&
+    !isEmpty(trip.departDate) &&
+    !isEmpty(trip.returnDate) &&
+    !isEmpty(trip.totalBudget)
+  );
+}
+
+function isEmpty(val: any) {
+  return val == null || val == "";
+}

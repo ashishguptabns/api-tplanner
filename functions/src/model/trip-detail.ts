@@ -1,7 +1,6 @@
 import { DocumentData } from "firebase-admin/firestore";
 
 export class TripDetail {
-  dateRange: any;
   cityTo: string;
   totalBudget: number;
   departDate: string;
@@ -10,7 +9,6 @@ export class TripDetail {
   returnDate: string;
   isPrivate: boolean;
   constructor(tripData: DocumentData) {
-    this.dateRange = tripData.dateRange;
     this.cityTo = tripData.cityTo;
     this.totalBudget = tripData.totalBudget;
     this.departDate = tripData.departDate;
