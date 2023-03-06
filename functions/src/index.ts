@@ -3,6 +3,7 @@ import * as functions from "firebase-functions";
 import admin = require("firebase-admin");
 import { TripDetail } from "./model/trip-detail";
 import { CommentDetail } from "./model/comment-detail";
+import { UserDetail } from "./model/user-detail";
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -10,6 +11,7 @@ const firestoreDb = admin.firestore();
 const cors = require("cors")({ origin: true });
 const COLLECTION_COMMENTS = "comments";
 const COLLECTION_TRIPS = "trips";
+const COLLECTION_USERS = "users";
 
 export const fetchCommentsByTripId = functions.https.onRequest(
   async (req, res) => {
@@ -86,6 +88,31 @@ export const saveTrip = functions.https.onRequest(async (req, res) => {
   });
 });
 
+export const saveUser = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let userToSave = req.body;
+    if (hasAllUserFields(userToSave)) {
+      if (!isEmpty(userToSave.uid)) {
+        await firestoreDb
+          .collection(COLLECTION_USERS)
+          .doc(userToSave.uid)
+          .set(userToSave, { merge: true });
+      } else {
+        let ref = firestoreDb.collection(COLLECTION_USERS).doc();
+        userToSave.uid = ref.id;
+        await firestoreDb.collection(COLLECTION_USERS).add(userToSave);
+      }
+      res.json({
+        result: "saved user",
+      });
+    } else {
+      res.json({
+        result: "invalid user",
+      });
+    }
+  });
+});
+
 export const fetchTripsByType = functions.https.onRequest(async (req, res) => {
   let tripsType = req.query.type;
   cors(req, res, async () => {
@@ -108,7 +135,7 @@ export const fetchTripsByType = functions.https.onRequest(async (req, res) => {
 });
 
 export const fetchTripById = functions.https.onRequest(async (req, res) => {
-  let id: string = req.query.id ? req.query.id.toString() : "";
+  let id = req.query.id as string;
   if (!isEmpty(id)) {
     cors(req, res, async () => {
       let tripSnapshot = await firestoreDb
@@ -124,6 +151,26 @@ export const fetchTripById = functions.https.onRequest(async (req, res) => {
     });
   } else {
     res.json({ status: false, result: "Invalid trip id" });
+  }
+});
+
+export const fetchUserById = functions.https.onRequest(async (req, res) => {
+  let userId = req.query.userId as string;
+  if (!isEmpty(userId)) {
+    cors(req, res, async () => {
+      let userSnapshot = await firestoreDb
+        .collection(COLLECTION_USERS)
+        .doc(userId)
+        .get();
+      if (!userSnapshot.exists) {
+        res.json({ status: false, result: "Invalid user id" });
+        return;
+      } else {
+        res.json(new UserDetail(userSnapshot.data()));
+      }
+    });
+  } else {
+    res.json({ status: false, result: "Invalid user id" });
   }
 });
 
@@ -146,5 +193,12 @@ function hasAllCommentFields(commentToPost: any) {
     !isEmpty(commentToPost.tripId) &&
     !isEmpty(commentToPost.commentText) &&
     !isEmpty(commentToPost.postedByUserId)
+  );
+}
+function hasAllUserFields(userToSave: any) {
+  return (
+    !isEmpty(userToSave.uid) &&
+    !isEmpty(userToSave.displayName) &&
+    !isEmpty(userToSave.email)
   );
 }
