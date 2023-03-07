@@ -5,6 +5,8 @@ export class TripDetail {
   id!: string;
   cityTo!: string;
   totalBudget!: number;
+  interCityTravelCost!: number;
+  withinPlaceCommuteCost!: number;
   departDate!: string;
   cityImgUrl: any;
   cityFrom!: string;
@@ -16,6 +18,8 @@ export class TripDetail {
       this.id = tripData.id;
       this.cityTo = tripData.cityTo;
       this.totalBudget = tripData.totalBudget;
+      this.interCityTravelCost = tripData.interCityTravelCost;
+      this.withinPlaceCommuteCost = tripData.withinPlaceCommuteCost;
       this.departDate = tripData.departDate;
       this.cityImgUrl = tripData.cityImgUrl;
       this.cityFrom = tripData.cityFrom;
