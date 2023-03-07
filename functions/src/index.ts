@@ -17,31 +17,32 @@ export const fetchCommentsByTripId = functions.https.onRequest(
   async (req, res) => {
     let tripId = req.query.tripId as string;
     cors(req, res, async () => {
-      let commentsSnapshot = await firestoreDb
-        .collection(COLLECTION_TRIPS)
-        .doc(tripId)
-        .collection(COLLECTION_COMMENTS)
-        .get();
-      if (commentsSnapshot.empty) {
-        res.json({ status: false, result: [] });
-        return;
-      }
-      let comments: CommentDetail[] = [];
-      await Promise.all(
-        commentsSnapshot.docs.map((commentSnapshot) => {
-          comments.push(
-            new CommentDetail(
-              commentSnapshot.data().tripId,
-              commentSnapshot.data().postedByUserId,
-              commentSnapshot.data().commentText
-            )
-          );
-        })
-      );
+      let comments = await _fetchCommentsByTripId(tripId);
       res.json(comments);
     });
   }
 );
+
+async function _fetchCommentsByTripId(tripId: string) {
+  let commentsSnapshot = await firestoreDb
+    .collection(COLLECTION_TRIPS)
+    .doc(tripId)
+    .collection(COLLECTION_COMMENTS)
+    .get();
+  let comments: CommentDetail[] = [];
+  await Promise.all(
+    commentsSnapshot.docs.map((commentSnapshot) => {
+      comments.push(
+        new CommentDetail(
+          commentSnapshot.data().tripId,
+          commentSnapshot.data().postedByUserId,
+          commentSnapshot.data().commentText
+        )
+      );
+    })
+  );
+  return comments;
+}
 
 export const postComment = functions.https.onRequest(async (req, res) => {
   cors(req, res, async () => {
@@ -134,40 +135,63 @@ export const fetchTripsByType = functions.https.onRequest(async (req, res) => {
   });
 });
 
+async function _fetchTripById(tripId: string) {
+  let tripSnapshot = await firestoreDb
+    .collection(COLLECTION_TRIPS)
+    .doc(tripId)
+    .get();
+  if (tripSnapshot.exists) {
+    return new TripDetail(tripSnapshot.data());
+  } else {
+    return undefined;
+  }
+}
+
 export const fetchTripById = functions.https.onRequest(async (req, res) => {
-  let id = req.query.id as string;
-  if (!isEmpty(id)) {
+  let tripId = req.query.id as string;
+  if (!isEmpty(tripId)) {
     cors(req, res, async () => {
-      let tripSnapshot = await firestoreDb
-        .collection(COLLECTION_TRIPS)
-        .doc(id)
-        .get();
-      if (!tripSnapshot.exists) {
-        res.json({ status: false, result: "Invalid trip id" });
-        return;
-      } else {
-        res.json(new TripDetail(tripSnapshot.data()));
+      let tripDetail = await _fetchTripById(tripId);
+      if (tripDetail != undefined) {
+        if (tripDetail.postedByUserId != null) {
+          let postedByUser = await _fetchUserById(tripDetail.postedByUserId);
+          tripDetail.postedByPhotoUrl = postedByUser
+            ? postedByUser.photoURL
+            : "";
+        } else {
+          res.json({
+            status: false,
+            tripDetail: tripDetail,
+            message: "postedByUserId is null",
+          });
+        }
+        tripDetail.comments = await _fetchCommentsByTripId(tripId);
       }
+      res.json(tripDetail);
     });
   } else {
     res.json({ status: false, result: "Invalid trip id" });
   }
 });
 
+async function _fetchUserById(userId: string) {
+  let userSnapshot = await firestoreDb
+    .collection(COLLECTION_USERS)
+    .doc(userId)
+    .get();
+  if (!userSnapshot.exists) {
+    return undefined;
+  } else {
+    return new UserDetail(userSnapshot.data());
+  }
+}
+
 export const fetchUserById = functions.https.onRequest(async (req, res) => {
   let userId = req.query.userId as string;
   if (!isEmpty(userId)) {
     cors(req, res, async () => {
-      let userSnapshot = await firestoreDb
-        .collection(COLLECTION_USERS)
-        .doc(userId)
-        .get();
-      if (!userSnapshot.exists) {
-        res.json({ status: false, result: "Invalid user id" });
-        return;
-      } else {
-        res.json(new UserDetail(userSnapshot.data()));
-      }
+      let user = await _fetchUserById(userId);
+      res.json(user);
     });
   } else {
     res.json({ status: false, result: "Invalid user id" });
