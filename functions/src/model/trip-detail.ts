@@ -15,11 +15,13 @@ export class TripDetail {
   returnDate!: string;
   isPrivate!: boolean;
   postedByPhotoUrl = "";
+  blogId = "";
   activities!: ActivityDetail[];
   comments: CommentDetail[] = [];
   constructor(tripData?: DocumentData) {
     if (tripData) {
       this.id = tripData.id;
+      this.blogId = tripData.blogId;
       this.postedByUserId = tripData.postedByUserId;
       this.cityTo = tripData.cityTo;
       this.totalBudget = tripData.totalBudget;

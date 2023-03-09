@@ -4,6 +4,7 @@ import admin = require("firebase-admin");
 import { TripDetail } from "./model/trip-detail";
 import { CommentDetail } from "./model/comment-detail";
 import { UserDetail } from "./model/user-detail";
+import { BlogDetail } from "./model/blog-detail";
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -12,6 +13,7 @@ const cors = require("cors")({ origin: true });
 const COLLECTION_COMMENTS = "comments";
 const COLLECTION_TRIPS = "trips";
 const COLLECTION_USERS = "users";
+const COLLECTION_BLOGS = "blogs";
 
 export const fetchCommentsByTripId = functions.https.onRequest(
   async (req, res) => {
@@ -93,22 +95,43 @@ export const saveUser = functions.https.onRequest(async (req, res) => {
   cors(req, res, async () => {
     let userToSave = req.body;
     if (hasAllUserFields(userToSave)) {
-      if (!isEmpty(userToSave.uid)) {
-        await firestoreDb
-          .collection(COLLECTION_USERS)
-          .doc(userToSave.uid)
-          .set(userToSave, { merge: true });
-      } else {
+      if (isEmpty(userToSave.uid)) {
         let ref = firestoreDb.collection(COLLECTION_USERS).doc();
         userToSave.uid = ref.id;
-        await firestoreDb.collection(COLLECTION_USERS).add(userToSave);
       }
+      await firestoreDb
+        .collection(COLLECTION_USERS)
+        .doc(userToSave.uid)
+        .set(userToSave, { merge: true });
       res.json({
         result: "saved user",
       });
     } else {
       res.json({
         result: "invalid user",
+      });
+    }
+  });
+});
+
+export const saveBlog = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let blogToSave = req.body;
+    if (hasAllBlogFields(blogToSave)) {
+      if (isEmpty(blogToSave.id)) {
+        let ref = firestoreDb.collection(COLLECTION_BLOGS).doc();
+        blogToSave.id = ref.id;
+      }
+      await firestoreDb
+        .collection(COLLECTION_BLOGS)
+        .doc(blogToSave.id)
+        .set(blogToSave, { merge: true });
+      res.json({
+        result: "saved bog",
+      });
+    } else {
+      res.json({
+        result: "invalid blog",
       });
     }
   });
@@ -146,6 +169,30 @@ async function _fetchTripById(tripId: string) {
     return undefined;
   }
 }
+
+async function _fetchBlogById(blogId: string) {
+  let blogSnapshot = await firestoreDb
+    .collection(COLLECTION_BLOGS)
+    .doc(blogId)
+    .get();
+  if (blogSnapshot.exists) {
+    return new BlogDetail(blogSnapshot.data());
+  } else {
+    return undefined;
+  }
+}
+
+export const fetchBlogById = functions.https.onRequest(async (req, res) => {
+  let blogId = req.query.id as string;
+  if (!isEmpty(blogId)) {
+    cors(req, res, async () => {
+      let blogDetail = await _fetchBlogById(blogId);
+      res.json(blogDetail);
+    });
+  } else {
+    res.json({ status: false, result: "Invalid blog id" });
+  }
+});
 
 export const fetchTripById = functions.https.onRequest(async (req, res) => {
   let tripId = req.query.id as string;
@@ -225,4 +272,7 @@ function hasAllUserFields(userToSave: any) {
     !isEmpty(userToSave.displayName) &&
     !isEmpty(userToSave.email)
   );
+}
+function hasAllBlogFields(blogToSave: any) {
+  return !isEmpty(blogToSave.text) && !isEmpty(blogToSave.imgUrl);
 }
