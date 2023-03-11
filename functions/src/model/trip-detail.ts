@@ -15,6 +15,7 @@ export class TripDetail {
   returnDate!: string;
   isPrivate!: boolean;
   postedByPhotoUrl = "";
+  postedById = "";
   blogId = "";
   activities!: ActivityDetail[];
   comments: CommentDetail[] = [];

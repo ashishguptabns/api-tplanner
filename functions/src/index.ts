@@ -194,26 +194,40 @@ export const fetchBlogById = functions.https.onRequest(async (req, res) => {
   }
 });
 
+export const fetchTripByIdForViewPage = functions.https.onRequest(
+  async (req, res) => {
+    let tripId = req.query.id as string;
+    if (!isEmpty(tripId)) {
+      cors(req, res, async () => {
+        let tripDetail = await _fetchTripById(tripId);
+        if (tripDetail != undefined) {
+          if (tripDetail.postedByUserId != null) {
+            let postedByUser = await _fetchUserById(tripDetail.postedByUserId);
+            if (postedByUser != null) {
+              tripDetail.postedByPhotoUrl = postedByUser.photoURL;
+            }
+          } else {
+            res.json({
+              status: false,
+              tripDetail: tripDetail,
+              message: "postedByUserId is null",
+            });
+          }
+          tripDetail.comments = await _fetchCommentsByTripId(tripId);
+        }
+        res.json(tripDetail);
+      });
+    } else {
+      res.json({ status: false, result: "Invalid trip id" });
+    }
+  }
+);
+
 export const fetchTripById = functions.https.onRequest(async (req, res) => {
   let tripId = req.query.id as string;
   if (!isEmpty(tripId)) {
     cors(req, res, async () => {
       let tripDetail = await _fetchTripById(tripId);
-      if (tripDetail != undefined) {
-        if (tripDetail.postedByUserId != null) {
-          let postedByUser = await _fetchUserById(tripDetail.postedByUserId);
-          tripDetail.postedByPhotoUrl = postedByUser
-            ? postedByUser.photoURL
-            : "";
-        } else {
-          res.json({
-            status: false,
-            tripDetail: tripDetail,
-            message: "postedByUserId is null",
-          });
-        }
-        tripDetail.comments = await _fetchCommentsByTripId(tripId);
-      }
       res.json(tripDetail);
     });
   } else {
