@@ -5,6 +5,7 @@ import { TripDetail } from "./model/trip-detail";
 import { CommentDetail } from "./model/comment-detail";
 import { UserDetail } from "./model/user-detail";
 import { BlogDetail } from "./model/blog-detail";
+import { FlatPostDTO } from "./model/flat-post-dto";
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -182,6 +183,27 @@ export const fetchTripsByType = functions.https.onRequest(async (req, res) => {
       })
     );
     res.json(trips);
+  });
+});
+
+export const fetchFlatPosts = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let postsSnapshot = await firestoreDb
+      .collection(COLLECTION_FLAT_POSTS)
+      .get();
+    if (postsSnapshot.empty) {
+      res.json({ status: false, result: [] });
+      return;
+    }
+    let posts: FlatPostDTO[] = [];
+    await Promise.all(
+      postsSnapshot.docs.map((postSnapshot) => {
+        const postData = postSnapshot.data();
+        console.log(postData, "hello", postData as FlatPostDTO);
+        posts.push(postData as FlatPostDTO);
+      })
+    );
+    res.json(posts);
   });
 });
 
