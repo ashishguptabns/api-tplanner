@@ -12,6 +12,7 @@ const firestoreDb = admin.firestore();
 const cors = require("cors")({ origin: true });
 const COLLECTION_COMMENTS = "comments";
 const COLLECTION_TRIPS = "trips";
+const COLLECTION_FLAT_POSTS = "flat_posts";
 const COLLECTION_USERS = "users";
 const COLLECTION_BLOGS = "blogs";
 
@@ -61,6 +62,32 @@ export const postComment = functions.https.onRequest(async (req, res) => {
     } else {
       res.json({
         result: "invalid comment",
+      });
+    }
+  });
+});
+
+export const saveFlatPost = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let flatPostToSave = req.body;
+    console.log(flatPostToSave);
+    if (hasAllFlatPostFields(flatPostToSave)) {
+      if (!isEmpty(flatPostToSave.id)) {
+        await firestoreDb
+          .collection(COLLECTION_FLAT_POSTS)
+          .doc(flatPostToSave.id)
+          .set(flatPostToSave, { merge: true });
+      } else {
+        let ref = firestoreDb.collection(COLLECTION_FLAT_POSTS).doc();
+        flatPostToSave.id = ref.id;
+        await firestoreDb.collection(COLLECTION_FLAT_POSTS).add(flatPostToSave);
+      }
+      res.json({
+        result: "saved post",
+      });
+    } else {
+      res.json({
+        result: "invalid post",
       });
     }
   });
@@ -289,4 +316,14 @@ function hasAllUserFields(userToSave: any) {
 }
 function hasAllBlogFields(blogToSave: any) {
   return !isEmpty(blogToSave.text) && !isEmpty(blogToSave.imgUrl);
+}
+function hasAllFlatPostFields(flatPostToSave: any) {
+  return (
+    !isEmpty(flatPostToSave.actionFlat) &&
+    !isEmpty(flatPostToSave.area) &&
+    !isEmpty(flatPostToSave.bhks) &&
+    !isEmpty(flatPostToSave.budgets) &&
+    !isEmpty(flatPostToSave.furnishing) &&
+    !isEmpty(flatPostToSave.location)
+  );
 }
