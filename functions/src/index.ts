@@ -2,10 +2,10 @@ import * as functions from "firebase-functions";
 
 import admin = require("firebase-admin");
 import { TripDetail } from "./model/trip-detail";
-import { CommentDetail } from "./model/comment-detail";
 import { UserDetail } from "./model/user-detail";
 import { BlogDetail } from "./model/blog-detail";
 import { FlatPostDTO } from "./model/flat-post-dto";
+import { CommentDetail } from "./model/comment-detail";
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -34,15 +34,26 @@ async function _fetchCommentsByTripId(tripId: string) {
     .collection(COLLECTION_COMMENTS)
     .get();
   let comments: CommentDetail[] = [];
+  let userInfoMap = new Map();
   await Promise.all(
-    commentsSnapshot.docs.map((commentSnapshot) => {
-      comments.push(
-        new CommentDetail(
-          commentSnapshot.data().tripId,
-          commentSnapshot.data().postedByUserId,
-          commentSnapshot.data().commentText
-        )
+    commentsSnapshot.docs.map(async (commentSnapshot) => {
+      let commentData = commentSnapshot.data();
+      let postedByUser: UserDetail | undefined = userInfoMap.get(
+        commentData.postedByUserId
       );
+      if (postedByUser == null) {
+        postedByUser = await _fetchUserById(commentData.postedByUserId);
+        userInfoMap.set(commentData.postedByUserId, postedByUser);
+      }
+      if (postedByUser != null) {
+        comments.push({
+          tripId: commentData.tripId,
+          postedByUserId: commentData.postedByUserId,
+          commentText: commentData.commentText,
+          postedByName: postedByUser.displayName,
+          postedByPhotoUrl: postedByUser.photoURL,
+        });
+      }
     })
   );
   return comments;

@@ -1,10 +1,7 @@
-export class CommentDetail {
+export interface CommentDetail {
   tripId: string;
   commentText: string;
   postedByUserId: string;
-  constructor(tripId: string, postedByUserId: any, commentText: string) {
-    this.tripId = tripId;
-    this.postedByUserId = postedByUserId;
-    this.commentText = commentText;
-  }
+  postedByName: string;
+  postedByPhotoUrl: string;
 }
