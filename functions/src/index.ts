@@ -6,6 +6,7 @@ import { UserDetail } from "./model/user-detail";
 import { BlogDetail } from "./model/blog-detail";
 import { FlatPostDTO } from "./model/flat-post-dto";
 import { CommentDetail } from "./model/comment-detail";
+import { TaskDetail } from "./model/TaskDetail";
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -16,6 +17,7 @@ const COLLECTION_TRIPS = "trips";
 const COLLECTION_FLAT_POSTS = "flat_posts";
 const COLLECTION_USERS = "users";
 const COLLECTION_BLOGS = "blogs";
+const COLLECTION_TASKS = "tasks";
 
 export const fetchCommentsByTripId = functions.https.onRequest(
   async (req, res) => {
@@ -26,6 +28,54 @@ export const fetchCommentsByTripId = functions.https.onRequest(
     });
   }
 );
+
+export const saveTask = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let taskToSave = req.body;
+
+    if (hasAllTaskFields(taskToSave)) {
+      if (!isEmpty(taskToSave.id)) {
+        await firestoreDb
+          .collection(COLLECTION_TASKS)
+          .doc(taskToSave.id)
+          .set(taskToSave, { merge: true });
+      } else {
+        let ref = firestoreDb.collection(COLLECTION_TASKS).doc();
+        taskToSave.id = ref.id;
+        await firestoreDb.collection(COLLECTION_TASKS).add(taskToSave);
+      }
+      res.json({
+        result: "saved task",
+      });
+    } else {
+      res.json({
+        result: "invalid task",
+      });
+    }
+  });
+});
+
+export const fetchTasks = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    let tasks = await _fetchTasks();
+    res.json(tasks);
+  });
+});
+
+async function _fetchTasks() {
+  let tasksSnapshot = await firestoreDb.collection(COLLECTION_TASKS).get();
+  let tasks: TaskDetail[] = [];
+  await Promise.all(
+    tasksSnapshot.docs.map(async (taskSnapshot) => {
+      let taskData = taskSnapshot.data();
+      tasks.push({
+        id: taskData.id,
+        text: taskData.text,
+      });
+    })
+  );
+  return tasks;
+}
 
 async function _fetchCommentsByTripId(tripId: string) {
   let commentsSnapshot = await firestoreDb
@@ -218,6 +268,18 @@ export const fetchFlatPosts = functions.https.onRequest(async (req, res) => {
   });
 });
 
+export const deleteTaskById = functions.https.onRequest(async (req, res) => {
+  let taskId = req.query.id as string;
+  if (!isEmpty(taskId)) {
+    cors(req, res, async () => {
+      await firestoreDb.collection(COLLECTION_TASKS).doc(taskId).delete();
+      res.json({ status: true, result: `Deleted id - ${taskId}` });
+    });
+  } else {
+    res.json({ status: false, result: "Invalid trip id" });
+  }
+});
+
 async function _fetchTripById(tripId: string) {
   let tripSnapshot = await firestoreDb
     .collection(COLLECTION_TRIPS)
@@ -359,4 +421,8 @@ function hasAllFlatPostFields(flatPostToSave: any) {
     !isEmpty(flatPostToSave.furnishing) &&
     !isEmpty(flatPostToSave.location)
   );
+}
+
+function hasAllTaskFields(taskToSave: any) {
+  return !isEmpty(taskToSave.id) && !isEmpty(taskToSave.text);
 }
