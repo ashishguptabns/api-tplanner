@@ -1,0 +1,7 @@
+Trips
+    1. Get a list of trips by type
+    2. Get trip detail by id
+
+Comments
+    1. Post a comment on a trip id
+    2. Get all comments for a trip id
