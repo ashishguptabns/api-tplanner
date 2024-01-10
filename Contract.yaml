@@ -1,0 +1,227 @@
+openapi: 3.0.1
+info:
+  title: api-tplanner
+  description: API provides basic CRUD functionality for Travel Planner App.
+  contact:
+    email: developer@tplanner.com
+  license:
+    name: Apache 2.0
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+  version: 1.0.0
+servers:
+  - url: "http://localhost:8091"
+    description: Local server
+  - url: "https://us-central1-travel-club-666.cloudfunctions.net/api/v1"
+    description: Dev server
+tags:
+  - name: Travel Planner
+    description: Methods covering E2E functionality for Travel Planner App.
+
+paths:
+  /tplanner/health:
+    get:
+      summary: Healthcheck verification.
+      operationId: getHealth
+      tags:
+        - Health Check
+      responses:
+        "200":
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /tplanner/trip:
+    post:
+      summary: For creating a new trip Id
+      operationId: postTrip
+      tags:
+        - Trip
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        400:
+          $ref: "../common/rest/error.yaml#/components/responses/BadRequest"
+        401:
+          $ref: "../common/rest/error.yaml#/components/responses/Unauthorized"
+        403:
+          $ref: "../common/rest/error.yaml#/components/responses/Forbidden"
+        404:
+          $ref: "../common/rest/error.yaml#/components/responses/NotFound"
+        500:
+          $ref: "../common/rest/error.yaml#/components/responses/InternalServerError"
+      security:
+        - jwt: []
+    patch:
+      summary: For modifying trip details
+      operationId: patchTrip
+      tags:
+        - Trip
+      parameters:
+        - name: id
+          description: id of the trip
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Success
+        400:
+          $ref: "../common/rest/error.yaml#/components/responses/BadRequest"
+        401:
+          $ref: "../common/rest/error.yaml#/components/responses/Unauthorized"
+        403:
+          $ref: "../common/rest/error.yaml#/components/responses/Forbidden"
+        404:
+          $ref: "../common/rest/error.yaml#/components/responses/NotFound"
+        500:
+          $ref: "../common/rest/error.yaml#/components/responses/InternalServerError"
+      security:
+        - jwt: []
+    get:
+      summary: For fetching details of a trip
+      operationId: getTrip
+      tags:
+        - Trip
+      parameters:
+        - name: id
+          description: id of the trip
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        400:
+          $ref: "../common/rest/error.yaml#/components/responses/BadRequest"
+        401:
+          $ref: "../common/rest/error.yaml#/components/responses/Unauthorized"
+        403:
+          $ref: "../common/rest/error.yaml#/components/responses/Forbidden"
+        404:
+          $ref: "../common/rest/error.yaml#/components/responses/NotFound"
+        500:
+          $ref: "../common/rest/error.yaml#/components/responses/InternalServerError"
+      security:
+        - jwt: []
+components:
+  schemas:
+    Health:
+      properties:
+        status:
+          type: string
+        ts:
+          type: integer
+    Created:
+      type: object
+      properties:
+        by:
+          type: string
+          description: userid of record updator
+          readOnly: true
+          example: USR1
+        byName:
+          type: string
+          description: username of record updator
+          readOnly: true
+          example: user name
+        at:
+          type: string
+          description: creation ts
+          readOnly: true
+          example: 2021-07-29T20:20:041Z
+      readOnly: true
+    Updated:
+      type: object
+      properties:
+        by:
+          type: string
+          description: userid of record creator
+          readOnly: true
+          example: USR2
+        byName:
+          type: string
+          description: username of record creator
+          example: User B
+          readOnly: true
+        at:
+          type: string
+          description: creation ts
+          example: 2022-07-29T20:20:041Z
+          readOnly: true
+      readOnly: true
+    Trip:
+      properties:
+        id:
+          type: string
+          description: Unique Identifier of the trip entity which is created.
+          readOnly: true
+      additionalProperties: false
+    Trips:
+      properties:
+        total:
+          type: integer
+          description: total number of Items available
+        lastKey:
+          type: string
+          description: To apply in a subsequent operation as 'startKey' to continue the operation for next set of conversations.
+        Items:
+          type: array
+          description: list of trips
+          items:
+            $ref: "#/components/schemas/Trip"
+    Error:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Unique UUID to trace the API request
+        env:
+          type: string
+          description: API environment.
+        region:
+          type: string
+          description: API region.
+        type:
+          type: string
+          description: Error type.
+        method:
+          type: string
+          description: Method which returned error.
+          enum:
+            - POST
+            - PATCH
+            - PUT
+            - GET
+            - DELETE
+        status:
+          type: integer
+          description: HTTP statusCode
+        title:
+          type: string
+          description: short description of the error code
+        errors:
+          type: array
+          items:
+            properties:
+              msg:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+  securitySchemes:
+    jwt: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
