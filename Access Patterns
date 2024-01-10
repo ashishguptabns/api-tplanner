@@ -1,8 +1,10 @@
 Trips
     1. Get a list of trips by type
+
+Trip
+    1. Modify trip details for an id
     2. Get trip detail by id
     3. Create a new trip id
-    4. Modify trip details for an id
 
 Comments
     1. Post a comment on a trip id
