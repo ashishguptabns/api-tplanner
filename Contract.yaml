@@ -68,6 +68,24 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  attribute:
+                    type: string
+                  value:
+                required:
+                  - attribute
+                  - value
+                example:
+                  - attribute: "updatedField1"
+                    value: "New Value 1"
       responses:
         201:
           description: Success
@@ -102,6 +120,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Trip"
+        400:
+          $ref: "../common/rest/error.yaml#/components/responses/BadRequest"
+        401:
+          $ref: "../common/rest/error.yaml#/components/responses/Unauthorized"
+        403:
+          $ref: "../common/rest/error.yaml#/components/responses/Forbidden"
+        404:
+          $ref: "../common/rest/error.yaml#/components/responses/NotFound"
+        500:
+          $ref: "../common/rest/error.yaml#/components/responses/InternalServerError"
+      security:
+        - jwt: []
+  /tplanner/trips:
+    get:
+      summary: For fetching trips
+      operationId: getTrips
+      tags:
+        - Trips
+      parameters:
+        - name: type
+          description: type of the trips
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trips"
         400:
           $ref: "../common/rest/error.yaml#/components/responses/BadRequest"
         401:
